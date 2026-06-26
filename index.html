@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ИИ-агенты: от чат-ботов к автономным системам</title>
+<title>TehKom · ИИ-агенты: от чат-ботов к автономным системам</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -35,8 +35,6 @@
     pointer-events: none;
     z-index: 0;
   }
-
-  /* Progress bar */
   .progress {
     position: fixed; top: 0; left: 0; height: 3px;
     background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
@@ -45,8 +43,6 @@
     z-index: 100;
     box-shadow: 0 0 20px rgba(124,92,255,0.6);
   }
-
-  /* Slide counter */
   .counter {
     position: fixed; top: 20px; right: 28px;
     font-size: 13px; color: var(--muted);
@@ -56,7 +52,20 @@
   }
   .counter b { color: var(--fg); font-weight: 600; }
 
-  /* Slides */
+  .logo {
+    position: fixed; top: 20px; left: 28px;
+    font-size: 14px; font-weight: 700;
+    color: var(--fg);
+    z-index: 50;
+    letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 12px var(--accent-2);
+  }
+
   .deck {
     position: relative;
     width: 100%; height: 100vh;
@@ -130,7 +139,6 @@
     -webkit-text-fill-color: transparent;
   }
 
-  /* Title slide */
   .title-slide {
     text-align: center;
     align-items: center;
@@ -158,7 +166,6 @@
   }
   .title-slide .meta b { color: var(--fg); }
 
-  /* Cards grid */
   .grid {
     display: grid;
     gap: 1.2rem;
@@ -198,7 +205,6 @@
     line-height: 1.55 !important;
   }
 
-  /* Comparison */
   .compare {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -228,7 +234,6 @@
     width: 6px; height: 6px; top: 0.95rem;
   }
 
-  /* Architecture diagram */
   .arch {
     display: flex;
     align-items: center;
@@ -258,7 +263,6 @@
     color: var(--accent-2);
   }
 
-  /* Code block */
   .code {
     background: #0d0d16;
     border: 1px solid var(--border);
@@ -275,7 +279,6 @@
   .code .c { color: #6c7086; font-style: italic; }
   .code .f { color: var(--accent-2); }
 
-  /* Timeline */
   .timeline {
     position: relative;
     margin-top: 1.5rem;
@@ -304,7 +307,6 @@
   }
   .tl-item b { color: var(--accent-2); }
 
-  /* Dots navigation */
   .dots {
     position: fixed;
     bottom: 28px; left: 50%;
@@ -331,7 +333,6 @@
     box-shadow: 0 0 10px var(--accent-2);
   }
 
-  /* Arrows */
   .nav-btn {
     position: fixed;
     top: 50%;
@@ -356,7 +357,6 @@
   .nav-btn.next { right: 20px; }
   .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-  /* Animations */
   .slide.active .anim {
     animation: fadeUp 0.6s ease both;
   }
@@ -370,7 +370,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Final slide */
   .final {
     text-align: center;
     align-items: center;
@@ -385,9 +384,10 @@
     font-size: 1.1rem;
     display: inline-block;
     box-shadow: 0 10px 40px rgba(124,92,255,0.4);
+    text-decoration: none;
+    color: #fff;
   }
 
-  /* Highlight box */
   .highlight {
     padding: 1.5rem;
     border-radius: 16px;
@@ -417,10 +417,41 @@
     align-items: start;
   }
   @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  .qr-block {
+    margin-top: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .qr-block h3 {
+    font-size: 1.1rem;
+    color: var(--fg);
+    margin: 0;
+  }
+  .qr-block p {
+    font-size: 0.9rem !important;
+    color: var(--muted) !important;
+    margin: 0;
+  }
+  .qr-wrap {
+    background: #fff;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,212,255,0.2);
+  }
+  .qr-wrap img { display: block; width: 160px; height: 160px; }
 </style>
 </head>
 <body>
 
+<div class="logo"><span class="dot"></span>TehKom</div>
 <div class="progress" id="progress"></div>
 <div class="counter"><b id="cur">1</b> / <span id="total">11</span></div>
 
@@ -428,12 +459,12 @@
 
   <!-- 1. TITLE -->
   <section class="slide title-slide active">
-    <div class="badge anim">🤖 Презентация · Июнь 2026</div>
+    <div class="badge anim">🤖 TehKom · Июнь 2026</div>
     <h1 class="anim d1">ИИ-агенты: от <span class="grad">чат-ботов</span> к автономным системам</h1>
     <p class="anim d2" style="font-size: 1.3rem; color: var(--muted); max-width: 60ch;">
       Как большие языковые модели превратились в самостоятельных работников, которые пишут код, исследуют данные и принимают решения.
     </p>
-    <div class="meta anim d3">5–7 минут · <b>11 слайдов</b></div>
+    <div class="meta anim d3">5–7 минут · <b>11 слайдов</b> · by <b>recoilgit</b></div>
   </section>
 
   <!-- 2. WHAT IS AN AGENT -->
@@ -748,9 +779,17 @@
     <p class="anim d2" style="font-size: 1.3rem; color: var(--muted); max-width: 60ch; margin-top: 1rem;">
       Мы переходим от интерфейсов, где человек делает всё руками, к миру, где ИИ выполняет задачи, а человек ставит цели.
     </p>
-    <div class="cta anim d3">Спасибо! Вопросы? 🙋</div>
-    <div class="meta anim d4" style="margin-top: 2.5rem;">
-      <b>Ресурсы:</b> anthropic.com/mcp · google.github.io/A2A · langchain-ai.github.io/langgraph
+
+    <div class="qr-block anim d3">
+      <h3>🎮 А теперь — интерактив!</h3>
+      <p>Узнай свой ИИ-профиль за 45 секунд</p>
+      <div class="qr-wrap">
+        <img id="qrImg" alt="QR-код на опрос" src="">
+      </div>
+    </div>
+
+    <div class="meta anim d4" style="margin-top: 2rem;">
+      <b>TehKom</b> · by <b>recoilgit</b> · <a href="https://github.com/recoilgit/TehKom" target="_blank" style="color: var(--accent-2); text-decoration: none;">github.com/recoilgit/TehKom</a>
     </div>
   </section>
 
@@ -762,13 +801,17 @@
 <div class="dots" id="dots"></div>
 
 <script>
+  // QR на опрос
+  const QUIZ_URL = 'https://recoilgit.github.io/TehKom/quiz.html';
+  document.getElementById('qrImg').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=' + encodeURIComponent(QUIZ_URL);
+
   const slides = document.querySelectorAll('.slide');
   const total = slides.length;
   let current = 0;
 
   document.getElementById('total').textContent = total;
 
-  // Build dots
   const dotsEl = document.getElementById('dots');
   slides.forEach((_, i) => {
     const d = document.createElement('div');
@@ -801,7 +844,6 @@
     if (e.key === 'End') go(total - 1);
   });
 
-  // Touch swipe
   let touchStart = 0;
   document.addEventListener('touchstart', e => touchStart = e.touches[0].clientX);
   document.addEventListener('touchend', e => {
