@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ИИ-агенты: от чат-ботов к автономным системам</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f;
+    --bg-2: #12121c;
+    --fg: #e8e8f0;
+    --muted: #8a8aa0;
+    --accent: #7c5cff;
+    --accent-2: #00d4ff;
+    --accent-3: #ff5c9d;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+  }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(800px circle at 15% 20%, rgba(124,92,255,0.18), transparent 50%),
+      radial-gradient(700px circle at 85% 80%, rgba(0,212,255,0.14), transparent 50%),
+      radial-gradient(600px circle at 50% 50%, rgba(255,92,157,0.08), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Progress bar */
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+    width: 0%;
+    transition: width 0.4s ease;
+    z-index: 100;
+    box-shadow: 0 0 20px rgba(124,92,255,0.6);
+  }
+
+  /* Slide counter */
+  .counter {
+    position: fixed; top: 20px; right: 28px;
+    font-size: 13px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    z-index: 50;
+    letter-spacing: 0.5px;
+  }
+  .counter b { color: var(--fg); font-weight: 600; }
+
+  /* Slides */
+  .deck {
+    position: relative;
+    width: 100%; height: 100vh;
+    z-index: 1;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 6vh 8vw;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+  }
+  .slide h1 {
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.2rem;
+    background: linear-gradient(135deg, #fff 0%, #b8b8d0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .slide h2 {
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+  .slide h3 {
+    font-size: 1.1rem;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 2rem;
+    letter-spacing: 0.3px;
+  }
+  .slide p, .slide li {
+    font-size: clamp(1rem, 1.4vw, 1.25rem);
+    line-height: 1.65;
+    color: #d0d0e0;
+  }
+  .slide ul { list-style: none; }
+  .slide ul li {
+    padding: 0.6rem 0 0.6rem 2rem;
+    position: relative;
+  }
+  .slide ul li::before {
+    content: '';
+    position: absolute; left: 0; top: 1.1rem;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 12px rgba(124,92,255,0.6);
+  }
+
+  .accent { color: var(--accent-2); }
+  .accent-2 { color: var(--accent-3); }
+  .accent-3 { color: var(--accent); }
+  .grad {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Title slide */
+  .title-slide {
+    text-align: center;
+    align-items: center;
+  }
+  .title-slide .badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    margin-bottom: 1.5rem;
+  }
+  .title-slide h1 {
+    font-size: clamp(2.5rem, 6.5vw, 5.5rem);
+    max-width: 18ch;
+    margin-bottom: 1.5rem;
+  }
+  .title-slide .meta {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin-top: 2rem;
+  }
+  .title-slide .meta b { color: var(--fg); }
+
+  /* Cards grid */
+  .grid {
+    display: grid;
+    gap: 1.2rem;
+    margin-top: 1rem;
+  }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124,92,255,0.4);
+  }
+  .card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+  .card h4 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .card p {
+    font-size: 0.95rem !important;
+    color: var(--muted) !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Comparison */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+  @media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+  .compare-col {
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare-col h4 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .compare-col.old h4 { color: var(--muted); }
+  .compare-col.new h4 { color: var(--accent-2); }
+  .compare-col li {
+    padding: 0.4rem 0 0.4rem 1.4rem !important;
+    font-size: 1rem !important;
+  }
+  .compare-col.old li::before {
+    background: #555; box-shadow: none;
+    width: 6px; height: 6px; top: 0.95rem;
+  }
+
+  /* Architecture diagram */
+  .arch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+  .arch-block {
+    padding: 1.2rem 1.5rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(124,92,255,0.15), rgba(0,212,255,0.1));
+    border: 1px solid rgba(124,92,255,0.3);
+    text-align: center;
+    min-width: 140px;
+  }
+  .arch-block.core {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 10px 40px rgba(124,92,255,0.4);
+  }
+  .arch-block small { display: block; font-size: 0.8rem; opacity: 0.7; margin-top: 0.3rem; }
+  .arch-arrow {
+    font-size: 1.5rem;
+    color: var(--accent-2);
+  }
+
+  /* Code block */
+  .code {
+    background: #0d0d16;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    font-family: "SF Mono", Monaco, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+  .code .k { color: var(--accent-3); }
+  .code .s { color: #a6e3a1; }
+  .code .c { color: #6c7086; font-style: italic; }
+  .code .f { color: var(--accent-2); }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    margin-top: 1.5rem;
+    padding-left: 2rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2), var(--accent-3));
+  }
+  .tl-item {
+    position: relative;
+    padding: 0.8rem 0 0.8rem 1.5rem;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -1.75rem; top: 1.1rem;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 3px solid var(--accent-2);
+    box-shadow: 0 0 12px rgba(0,212,255,0.6);
+  }
+  .tl-item b { color: var(--accent-2); }
+
+  /* Dots navigation */
+  .dots {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px;
+    z-index: 50;
+    background: rgba(10,10,15,0.6);
+    backdrop-filter: blur(10px);
+    padding: 8px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .dot.active {
+    background: var(--accent-2);
+    width: 24px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px var(--accent-2);
+  }
+
+  /* Arrows */
+  .nav-btn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 1.2rem;
+    z-index: 50;
+    transition: all 0.2s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-btn:hover {
+    background: rgba(124,92,255,0.2);
+    border-color: var(--accent);
+  }
+  .nav-btn.prev { left: 20px; }
+  .nav-btn.next { right: 20px; }
+  .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  /* Animations */
+  .slide.active .anim {
+    animation: fadeUp 0.6s ease both;
+  }
+  .slide.active .anim.d1 { animation-delay: 0.1s; }
+  .slide.active .anim.d2 { animation-delay: 0.2s; }
+  .slide.active .anim.d3 { animation-delay: 0.3s; }
+  .slide.active .anim.d4 { animation-delay: 0.4s; }
+  .slide.active .anim.d5 { animation-delay: 0.5s; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Final slide */
+  .final {
+    text-align: center;
+    align-items: center;
+  }
+  .final h1 { font-size: clamp(2.5rem, 6vw, 5rem); }
+  .final .cta {
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: inline-block;
+    box-shadow: 0 10px 40px rgba(124,92,255,0.4);
+  }
+
+  /* Highlight box */
+  .highlight {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(124,92,255,0.12), rgba(0,212,255,0.08));
+    border: 1px solid rgba(124,92,255,0.3);
+    margin-top: 1rem;
+  }
+  .highlight b { color: var(--accent-2); }
+
+  .tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    background: rgba(124,92,255,0.15);
+    border: 1px solid rgba(124,92,255,0.3);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--accent-2);
+    margin-right: 0.4rem;
+    margin-bottom: 0.4rem;
+    font-family: "SF Mono", monospace;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="counter"><b id="cur">1</b> / <span id="total">11</span></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide title-slide active">
+    <div class="badge anim">🤖 Презентация · Июнь 2026</div>
+    <h1 class="anim d1">ИИ-агенты: от <span class="grad">чат-ботов</span> к автономным системам</h1>
+    <p class="anim d2" style="font-size: 1.3rem; color: var(--muted); max-width: 60ch;">
+      Как большие языковые модели превратились в самостоятельных работников, которые пишут код, исследуют данные и принимают решения.
+    </p>
+    <div class="meta anim d3">5–7 минут · <b>11 слайдов</b></div>
+  </section>
+
+  <!-- 2. WHAT IS AN AGENT -->
+  <section class="slide">
+    <h3 class="anim">01 · Понятие</h3>
+    <h2 class="anim d1">Что такое <span class="accent">ИИ-агент</span>?</h2>
+    <div class="compare anim d2">
+      <div class="compare-col old">
+        <h4>🗨️ Обычный чат-бот</h4>
+        <ul>
+          <li>Один запрос — один ответ</li>
+          <li>Не помнит контекст между сессиями</li>
+          <li>Работает только с текстом</li>
+          <li>Не может выполнять действия в мире</li>
+        </ul>
+      </div>
+      <div class="compare-col new">
+        <h4>🤖 ИИ-агент</h4>
+        <ul>
+          <li>Цикл: <b>думай → планируй → действуй</b></li>
+          <li>Долговременная память и контекст</li>
+          <li>Использует инструменты (код, API, браузер)</li>
+          <li>Самостоятельно достигает цели</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight anim d3">
+      <b>Ключевое отличие:</b> агент не просто отвечает на вопросы — он <b>выполняет задачи</b> в реальном мире.
+    </div>
+  </section>
+
+  <!-- 3. ARCHITECTURE -->
+  <section class="slide">
+    <h3 class="anim">02 · Архитектура</h3>
+    <h2 class="anim d1">Из чего состоит агент</h2>
+    <div class="arch anim d2">
+      <div class="arch-block">🧠<small>Память</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block core">LLM<small>«мозг»</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block">📋<small>Планировщик</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block">🛠️<small>Инструменты</small></div>
+    </div>
+    <div class="grid grid-4 anim d3" style="margin-top: 2rem;">
+      <div class="card">
+        <span class="icon">🧠</span>
+        <h4>Память</h4>
+        <p>Краткосрочная (контекст) и долгосрочная (векторные БД: Pinecone, Qdrant)</p>
+      </div>
+      <div class="card">
+        <span class="icon">📋</span>
+        <h4>Планирование</h4>
+        <p>Декомпозиция задачи на шаги. ReAct, Tree-of-Thought, plan-and-execute</p>
+      </div>
+      <div class="card">
+        <span class="icon">🛠️</span>
+        <h4>Инструменты</h4>
+        <p>Поиск, код, API, браузер, файловая система — через function calling</p>
+      </div>
+      <div class="card">
+        <span class="icon">👁️</span>
+        <h4>Рефлексия</h4>
+        <p>Агент проверяет свои действия и исправляет ошибки</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. KEY TECH 2026 -->
+  <section class="slide">
+    <h3 class="anim">03 · Технологии 2026</h3>
+    <h2 class="anim d1">Протоколы, которые <span class="accent">меняют всё</span></h2>
+    <div class="grid grid-2 anim d2">
+      <div class="card">
+        <span class="icon">🔌</span>
+        <h4>MCP — Model Context Protocol</h4>
+        <p>Стандарт от Anthropic. Универсальный «USB-порт» для подключения LLM к любым источникам данных и инструментам. Уже поддерживают OpenAI, Google, Cursor, VS Code.</p>
+        <div style="margin-top: 0.8rem;">
+          <span class="tag">Anthropic</span>
+          <span class="tag">open standard</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🤝</span>
+        <h4>A2A — Agent-to-Agent</h4>
+        <p>Протокол от Google. Позволяет агентам от разных вендоров находить друг друга, договариваться и совместно выполнять задачи.</p>
+        <div style="margin-top: 0.8rem;">
+          <span class="tag">Google</span>
+          <span class="tag">multi-vendor</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">⚡</span>
+        <h4>Function Calling</h4>
+        <p>Нативный вызов функций из LLM. Основа любого современного агента — модель сама решает, какой инструмент использовать.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🧩</span>
+        <h4>Reasoning-модели</h4>
+        <p>o3, Claude 3.5+, Gemini 2.5 Pro, DeepSeek R1 — модели с «цепочкой рассуждений» для сложных задач.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. REAL EXAMPLES -->
+  <section class="slide">
+    <h3 class="anim">04 · Примеры</h3>
+    <h2 class="anim d1">Агенты, которые <span class="accent-2">уже работают</span></h2>
+    <div class="grid grid-3 anim d2">
+      <div class="card">
+        <span class="icon">💻</span>
+        <h4>Claude Code</h4>
+        <p>Агент в терминале от Anthropic. Пишет, рефакторит, запускает тесты в реальных репозиториях.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🧪</span>
+        <h4>OpenAI Codex</h4>
+        <p>Облачный агент-разработчик. Выполняет задачи параллельно в изолированных средах.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🎯</span>
+        <h4>Devin (Cognition)</h4>
+        <p>«Первый ИИ-инженер». Самостоятельно закрывает тикеты в GitHub, деплоит.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🌐</span>
+        <h4>Manus</h4>
+        <p>Универсальный агент общего назначения. Работает с браузером, файлами, API.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔍</span>
+        <h4>Perplexity Comet</h4>
+        <p>Исследовательский агент. Собирает отчёты из сотен источников за минуты.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🏢</span>
+        <h4>GitHub Copilot Agent</h4>
+        <p>Автономно выполняет задачи из Issues, создаёт PR, проходит code review.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. USE CASES -->
+  <section class="slide">
+    <h3 class="anim">05 · Применение</h3>
+    <h2 class="anim d1">Где агенты <span class="grad">приносят пользу</span></h2>
+    <div class="grid grid-2 anim d2">
+      <div class="card">
+        <span class="icon">👨‍💻</span>
+        <h4>Разработка ПО</h4>
+        <p>Написание кода, ревью PR, миграции, рефакторинг, закрытие багов. Ускорение команд в 2–5 раз.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <h4>Аналитика данных</h4>
+        <p>Агент получает вопрос на естественном языке → пишет SQL/Python → строит графики → делает выводы.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🎧</span>
+        <h4>Поддержка клиентов</h4>
+        <p>Не FAQ-бот, а полноценный агент: проверяет заказы, оформляет возвраты, эскалирует сложные случаи.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔬</span>
+        <h4>Научные исследования</h4>
+        <p>Автоматический обзор литературы, генерация гипотез, планирование экспериментов.</p>
+      </div>
+      <div class="card">
+        <span class="icon">⚖️</span>
+        <h4>Юриспруденция</h4>
+        <p>Анализ договоров, поиск прецедентов, подготовка документов.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📈</span>
+        <h4>Sales & Marketing</h4>
+        <p>Персонализация outreach, квалификация лидов, генерация контента.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. MULTI-AGENT -->
+  <section class="slide">
+    <h3 class="anim">06 · Multi-agent</h3>
+    <h2 class="anim d1">Когда один агент — <span class="accent-2">недостаточно</span></h2>
+    <div class="two-col anim d2">
+      <div>
+        <p style="margin-bottom: 1.2rem;">
+          Сложные задачи решаются командой специализированных агентов, каждый со своей ролью:
+        </p>
+        <ul>
+          <li><b>Оркестратор</b> — распределяет задачи</li>
+          <li><b>Исследователь</b> — собирает информацию</li>
+          <li><b>Критик</b> — проверяет качество</li>
+          <li><b>Исполнитель</b> — выполняет действия</li>
+        </ul>
+        <div class="highlight" style="margin-top: 1.5rem;">
+          <b>Фреймворки:</b> LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Google ADK
+        </div>
+      </div>
+      <div class="code">
+<span class="c">// Пример: команда агентов</span>
+<span class="k">const</span> team = <span class="f">createTeam</span>({
+  <span class="s">researcher</span>: <span class="f">agent</span>(<span class="s">'find data'</span>),
+  <span class="s">coder</span>:      <span class="f">agent</span>(<span class="s">'write code'</span>),
+  <span class="s">reviewer</span>:   <span class="f">agent</span>(<span class="s">'review PR'</span>),
+  <span class="s">deployer</span>:   <span class="f">agent</span>(<span class="s">'ship it'</span>),
+});
+
+<span class="k">await</span> team.<span class="f">run</span>(
+  <span class="s">'Добавь тёмную тему на сайт'</span>
+);
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. RISKS -->
+  <section class="slide">
+    <h3 class="anim">07 · Риски</h3>
+    <h2 class="anim d1">О чём <span class="accent-3">стоит помнить</span></h2>
+    <div class="grid grid-2 anim d2">
+      <div class="card">
+        <span class="icon">🎯</span>
+        <h4>Проблема выравнивания</h4>
+        <p>Агент может буквально выполнить задачу, но не так, как вы хотели. «Сделай красиво» ≠ то, что вы имели в виду.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔒</span>
+        <h4>Безопасность</h4>
+        <p>Агент с доступом к файлам, почте и коду — серьёзный вектор атаки. Prompt injection становится критичным.</p>
+      </div>
+      <div class="card">
+        <span class="icon">💸</span>
+        <h4>Стоимость</h4>
+        <p>Агент может «зациклиться» и сжечь сотни долларов на токены. Нужны лимиты и мониторинг.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🐛</span>
+        <h4>Надёжность</h4>
+        <p>LLM всё ещё галлюцинируют. В продакшене нужен human-in-the-loop для критических действий.</p>
+      </div>
+    </div>
+    <div class="highlight anim d3">
+      <b>Правило 2026 года:</b> доверяй агенту, но проверяй. Автономия растёт — растёт и ответственность.
+    </div>
+  </section>
+
+  <!-- 9. FUTURE -->
+  <section class="slide">
+    <h3 class="anim">08 · Будущее</h3>
+    <h2 class="anim d1">Что нас ждёт в <span class="grad">2026–2028</span></h2>
+    <div class="timeline anim d2">
+      <div class="tl-item">
+        <b>Универсальные компьютерные агенты</b> — один агент управляет ОС, браузером, приложениями как человек
+      </div>
+      <div class="tl-item">
+        <b>Агенты-коллеги</b> — постоянные цифровые сотрудники в командах с памятью о проектах
+      </div>
+      <div class="tl-item">
+        <b>Self-improving системы</b> — агенты, которые улучшают свой собственный код и инструменты
+      </div>
+      <div class="tl-item">
+        <b>Экономика агентов</b> — агенты нанимают других агентов, платят за API, торгуют услугами
+      </div>
+      <div class="tl-item">
+        <b>Персональные ИИ</b> — ваш агент знает вас лучше, чем вы сами, и действует от вашего имени
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. FOR DEVELOPERS -->
+  <section class="slide">
+    <h3 class="anim">09 · Что делать сейчас</h3>
+    <h2 class="anim d1">Как <span class="accent">разработчику</span> войти в тему</h2>
+    <div class="grid grid-3 anim d2">
+      <div class="card">
+        <span class="icon">1️⃣</span>
+        <h4>Освой MCP</h4>
+        <p>Напиши свой MCP-сервер для любимого API. Это новый стандарт — будет в каждой вакансии.</p>
+      </div>
+      <div class="card">
+        <span class="icon">2️⃣</span>
+        <h4>Изучи LangGraph</h4>
+        <p>Графовые агенты — основной паттерн 2026. Пойми состояния, узлы, условия.</p>
+      </div>
+      <div class="card">
+        <span class="icon">3️⃣</span>
+        <h4>Работай с reasoning-моделями</h4>
+        <p>o3, Claude 3.5+, Gemini 2.5 Pro. Учись формулировать задачи для «думающих» моделей.</p>
+      </div>
+      <div class="card">
+        <span class="icon">4️⃣</span>
+        <h4>Думай о безопасности</h4>
+        <p>Sandboxing, лимиты, audit log, human-in-the-loop — это не опция, а обязательство.</p>
+      </div>
+      <div class="card">
+        <span class="icon">5️⃣</span>
+        <h4>Строй end-to-end</h4>
+        <p>Не просто промпт, а полный цикл: память, инструменты, наблюдение, улучшение.</p>
+      </div>
+      <div class="card">
+        <span class="icon">6️⃣</span>
+        <h4>Следи за A2A</h4>
+        <p>Multi-vendor агенты — следующий фронт. Учись делать своих агентов «совместимыми».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. FINAL -->
+  <section class="slide final">
+    <div class="badge anim">🚀 Выводы</div>
+    <h1 class="anim d1">Агенты — это <span class="grad">новая ОС</span> для работы</h1>
+    <p class="anim d2" style="font-size: 1.3rem; color: var(--muted); max-width: 60ch; margin-top: 1rem;">
+      Мы переходим от интерфейсов, где человек делает всё руками, к миру, где ИИ выполняет задачи, а человек ставит цели.
+    </p>
+    <div class="cta anim d3">Спасибо! Вопросы? 🙋</div>
+    <div class="meta anim d4" style="margin-top: 2.5rem;">
+      <b>Ресурсы:</b> anthropic.com/mcp · google.github.io/A2A · langchain-ai.github.io/langgraph
+    </div>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<button class="nav-btn prev" id="prev" aria-label="Назад">‹</button>
+<button class="nav-btn next" id="next" aria-label="Вперёд">›</button>
+<div class="dots" id="dots"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  document.getElementById('total').textContent = total;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => go(i));
+    dotsEl.appendChild(d);
+  });
+  const dots = document.querySelectorAll('.dot');
+
+  function go(i) {
+    if (i < 0 || i >= total) return;
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    document.getElementById('cur').textContent = current + 1;
+    document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+    document.getElementById('prev').disabled = current === 0;
+    document.getElementById('next').disabled = current === total - 1;
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(current - 1); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End') go(total - 1);
+  });
+
+  // Touch swipe
+  let touchStart = 0;
+  document.addEventListener('touchstart', e => touchStart = e.touches[0].clientX);
+  document.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - touchStart;
+    if (Math.abs(diff) > 50) go(current + (diff < 0 ? 1 : -1));
+  });
+
+  go(0);
+</script>
+</body>
+</html>
