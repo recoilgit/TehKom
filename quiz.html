@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TehKom · Твой ИИ-профиль</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f;
+    --fg: #e8e8f0;
+    --muted: #8a8aa0;
+    --accent: #7c5cff;
+    --accent-2: #00d4ff;
+    --accent-3: #ff5c9d;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+  }
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(800px circle at 15% 20%, rgba(124,92,255,0.18), transparent 50%),
+      radial-gradient(700px circle at 85% 80%, rgba(0,212,255,0.14), transparent 50%),
+      radial-gradient(600px circle at 50% 50%, rgba(255,92,157,0.08), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .logo {
+    position: fixed; top: 20px; left: 28px;
+    font-size: 14px; font-weight: 700;
+    color: var(--fg);
+    z-index: 50;
+    letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 12px var(--accent-2);
+  }
+
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: 0 0 20px rgba(124,92,255,0.6);
+  }
+
+  .counter {
+    position: fixed; top: 20px; right: 28px;
+    font-size: 13px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    z-index: 50;
+    letter-spacing: 0.5px;
+  }
+  .counter b { color: var(--fg); font-weight: 600; }
+
+  .container {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6vh 6vw;
+    z-index: 1;
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 720px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: fadeIn 0.5s ease both;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 0%, #b8b8d0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 50ch;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+  }
+
+  .grad {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .btn {
+    padding: 1rem 2.2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none;
+    border-radius: 100px;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 10px 40px rgba(124,92,255,0.4);
+    font-family: inherit;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 50px rgba(124,92,255,0.55); }
+  .btn:active { transform: translateY(0); }
+
+  .question-num {
+    font-size: 0.9rem;
+    color: var(--accent-2);
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .options {
+    display: grid;
+    gap: 0.9rem;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  .option {
+    padding: 1.2rem 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    text-align: left;
+    font-size: 1.05rem;
+    color: var(--fg);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: inherit;
+    width: 100%;
+  }
+  .option:hover {
+    border-color: rgba(124,92,255,0.5);
+    background: rgba(124,92,255,0.08);
+    transform: translateX(4px);
+  }
+  .option .emoji {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .option .text { flex: 1; }
+  .option.selected {
+    border-color: var(--accent-2);
+    background: linear-gradient(135deg, rgba(124,92,255,0.15), rgba(0,212,255,0.1));
+    box-shadow: 0 0 30px rgba(0,212,255,0.2);
+  }
+
+  .result-card {
+    width: 100%;
+    padding: 2.5rem 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 2rem;
+  }
+  .result-emoji {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+    animation: bounce 0.8s ease;
+  }
+  @keyframes bounce {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .result-title {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .result-desc {
+    font-size: 1.05rem;
+    color: #d0d0e0;
+    line-height: 1.6;
+    max-width: 55ch;
+    margin: 0 auto;
+  }
+
+  .qr-section {
+    margin-top: 1.5rem;
+    padding: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  .qr-section h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  .qr-section p {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .qr-wrap {
+    background: #fff;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,212,255,0.2);
+  }
+  .qr-wrap img {
+    display: block;
+    width: 180px;
+    height: 180px;
+  }
+
+  .restart {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .restart:hover { color: var(--fg); border-color: var(--accent); }
+
+  .stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 4vh 5vw; }
+    .option { padding: 1rem 1.2rem; font-size: 0.98rem; }
+    .result-card { padding: 1.8rem 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="logo"><span class="dot"></span>TehKom</div>
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter" style="display:none;">Вопрос <b id="cur">1</b> / <span id="total">7</span></div>
+
+<div class="container">
+
+  <!-- WELCOME -->
+  <div class="screen active" id="screen-welcome">
+    <div class="badge">🎮 Интерактивный опрос · TehKom</div>
+    <h1>Какой ты <span class="grad">ИИ-пользователь</span>?</h1>
+    <p class="subtitle">
+      7 коротких вопросов о том, как искусственный интеллект вписался в твою жизнь.
+      Займёт меньше минуты.
+    </p>
+    <button class="btn" onclick="start()">Начать →</button>
+    <div style="margin-top: 2rem; color: var(--muted); font-size: 0.9rem;">
+      🕒 ~45 секунд · 📱 Работает на телефоне
+    </div>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="screen" id="screen-question">
+    <div class="question-num" id="qNum">ВОПРОС 1 / 7</div>
+    <h2 id="qText"></h2>
+    <div class="options" id="qOptions"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="screen-result">
+    <div class="badge">✨ Твой результат</div>
+    <div class="result-card">
+      <span class="result-emoji" id="rEmoji">🚀</span>
+      <div class="result-title" id="rTitle">ИИ-энтузиаст</div>
+      <p class="result-desc" id="rDesc">Описание...</p>
+      <div class="stats" id="rStats"></div>
+    </div>
+
+    <div class="qr-section">
+      <h3>📱 А теперь — к презентации!</h3>
+      <p>Наведи камеру на QR-код, чтобы посмотреть полный доклад про ИИ-агентов</p>
+      <div class="qr-wrap">
+        <img id="qrImg" alt="QR-код" src="">
+      </div>
+    </div>
+
+    <button class="restart" onclick="restart()">↺ Пройти ещё раз</button>
+  </div>
+
+</div>
+
+<script>
+  // ⚙️ Ссылка на презентацию (уже подставлена)
+  const PRESENTATION_URL = 'https://recoilgit.github.io/TehKom/';
+
+  const questions = [
+    {
+      q: 'Как часто ты используешь ИИ?',
+      opts: [
+        { e: '⚡', t: 'Каждый день, это часть рутины', s: 3 },
+        { e: '📅', t: 'Несколько раз в неделю', s: 2 },
+        { e: '🤔', t: 'Пару раз пробовал', s: 1 },
+        { e: '🚫', t: 'Почти не использую', s: 0 },
+      ]
+    },
+    {
+      q: 'Для каких задач ты чаще всего применяешь ИИ?',
+      opts: [
+        { e: '💼', t: 'Работа и учёба: код, тексты, анализ', s: 3 },
+        { e: '🎨', t: 'Творчество: картинки, музыка, идеи', s: 2 },
+        { e: '🎮', t: 'Развлечения и общение', s: 1 },
+        { e: '❓', t: 'Пока не нашёл своё применение', s: 0 },
+      ]
+    },
+    {
+      q: 'Какой ИИ ты используешь чаще всего?',
+      opts: [
+        { e: '🧠', t: 'ChatGPT / Claude / Gemini — знаю несколько', s: 3 },
+        { e: '⭐', t: 'Один основной, но пробую другие', s: 2 },
+        { e: '📱', t: 'Только встроенный в телефон/браузер', s: 1 },
+        { e: '🤷', t: 'Сложно сказать', s: 0 },
+      ]
+    },
+    {
+      q: 'Насколько ты доверяешь ответам ИИ?',
+      opts: [
+        { e: '✅', t: 'Полностью, почти всегда прав', s: 3 },
+        { e: '🔍', t: 'Проверяю важное, в целом доверяю', s: 2 },
+        { e: '⚠️', t: 'Отношусь с осторожностью', s: 1 },
+        { e: '❌', t: 'Не доверяю, слишком много ошибок', s: 0 },
+      ]
+    },
+    {
+      q: 'Считаешь ли ты, что ИИ влияет на твою профессию?',
+      opts: [
+        { e: '🚀', t: 'Да, уже сильно помогает / меняет её', s: 3 },
+        { e: '🌱', t: 'Начинает влиять, учусь адаптироваться', s: 2 },
+        { e: '🤷', t: 'Пока не замечаю особого влияния', s: 1 },
+        { e: '😰', t: 'Боюсь, что заменит меня', s: 0 },
+      ]
+    },
+    {
+      q: 'Готов ли ты платить за подписку на ИИ?',
+      opts: [
+        { e: '💳', t: 'Уже плачу, это того стоит', s: 3 },
+        { e: '💰', t: 'Готов, если будет реально полезно', s: 2 },
+        { e: '🆓', t: 'Только бесплатные версии', s: 1 },
+        { e: '🚫', t: 'Не вижу смысла платить', s: 0 },
+      ]
+    },
+    {
+      q: 'Как ты видишь будущее ИИ через 5 лет?',
+      opts: [
+        { e: '🌟', t: 'Невероятные возможности, жду с нетерпением', s: 3 },
+        { e: '⚖️', t: 'Будет мощным инструментом, но с рисками', s: 2 },
+        { e: '🤔', t: 'Не уверен, посмотрим', s: 1 },
+        { e: '😟', t: 'Опасаюсь последствий', s: 0 },
+      ]
+    },
+  ];
+
+  const results = [
+    {
+      min: 0, max: 6,
+      emoji: '🌱',
+      title: 'ИИ-новичок',
+      desc: 'Ты только начинаешь знакомство с ИИ. Это отлично — впереди целая вселенная возможностей. Начни с простых задач: попроси ИИ помочь с письмом, идеей или объяснением сложной темы. Через месяц ты себя не узнаешь!',
+    },
+    {
+      min: 7, max: 11,
+      emoji: '🤔',
+      title: 'Осторожный скептик',
+      desc: 'Ты относишься к ИИ критически — и это правильно. Ты видишь не только возможности, но и риски. Совет: попробуй использовать ИИ в одной конкретной задаче, где он точно силён (например, анализ данных или перевод). Опыт важнее теорий.',
+    },
+    {
+      min: 12, max: 17,
+      emoji: '🛠️',
+      title: 'ИИ-практик',
+      desc: 'Ты используешь ИИ по делу и знаешь его сильные и слабые стороны. Золотая середина! Следующий шаг — освоить агентов и MCP, чтобы ИИ делал за тебя целые рабочие процессы, а не отдельные задачи.',
+    },
+    {
+      min: 18, max: 21,
+      emoji: '🚀',
+      title: 'ИИ-энтузиаст',
+      desc: 'Ты на острие волны! ИИ — твоя суперсила. Ты знаешь про агентов, multi-agent системы и, скорее всего, уже строишь что-то своё. Твой путь — делиться опытом и создавать инструменты, которые изменят индустрию.',
+    },
+  ];
+
+  let current = 0;
+  let answers = [];
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function start() {
+    current = 0;
+    answers = [];
+    document.getElementById('counter').style.display = 'block';
+    document.getElementById('total').textContent = questions.length;
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const q = questions[current];
+    document.getElementById('cur').textContent = current + 1;
+    document.getElementById('qNum').textContent = `ВОПРОС ${current + 1} / ${questions.length}`;
+    document.getElementById('qText').textContent = q.q;
+
+    const optsEl = document.getElementById('qOptions');
+    optsEl.innerHTML = '';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.innerHTML = `<span class="emoji">${opt.e}</span><span class="text">${opt.t}</span>`;
+      btn.onclick = () => selectOption(i);
+      optsEl.appendChild(btn);
+    });
+
+    const progress = ((current) / questions.length) * 100;
+    document.getElementById('progress').style.width = progress + '%';
+
+    showScreen('screen-question');
+  }
+
+  function selectOption(i) {
+    const opts = document.querySelectorAll('#qOptions .option');
+    opts.forEach(o => o.classList.remove('selected'));
+    opts[i].classList.add('selected');
+
+    answers.push(questions[current].opts[i].s);
+
+    setTimeout(() => {
+      current++;
+      if (current < questions.length) {
+        renderQuestion();
+      } else {
+        showResult();
+      }
+    }, 350);
+  }
+
+  function showResult() {
+    const total = answers.reduce((a, b) => a + b, 0);
+    const result = results.find(r => total >= r.min && total <= r.max);
+
+    document.getElementById('rEmoji').textContent = result.emoji;
+    document.getElementById('rTitle').textContent = result.title;
+    document.getElementById('rDesc').textContent = result.desc;
+
+    const statsEl = document.getElementById('rStats');
+    statsEl.innerHTML = `
+      <div class="stat">
+        <div class="stat-val">${total}</div>
+        <div class="stat-label">из 21 балла</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${Math.round(total / 21 * 100)}%</div>
+        <div class="stat-label">ИИ-активность</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${answers.length}</div>
+        <div class="stat-label">вопросов</div>
+      </div>
+    `;
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=${encodeURIComponent(PRESENTATION_URL)}`;
+    document.getElementById('qrImg').src = qrUrl;
+
+    document.getElementById('progress').style.width = '100%';
+    document.getElementById('counter').style.display = 'none';
+    showScreen('screen-result');
+  }
+
+  function restart() {
+    document.getElementById('progress').style.width = '0%';
+    showScreen('screen-welcome');
+  }
+</script>
+</body>
+</html>
